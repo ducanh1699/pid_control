@@ -11,6 +11,9 @@ find_package(catkin REQUIRED COMPONENTS
   mavros_msgs
   message_generation
   rospy
+  sensor_msgs
+  geographic_msgs
+  std_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -58,6 +61,7 @@ add_service_files(
    FILES
      goto_pid.srv
      target_local_pos.srv
+     goto_aruco.srv
 #   Service1.srv
 #   Service2.srv
 )
@@ -73,6 +77,8 @@ add_service_files(
 generate_messages(
    DEPENDENCIES
    mavros_msgs
+   sensor_msgs
+   std_msgs
 )
 
 ################################################

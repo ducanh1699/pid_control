@@ -11,11 +11,10 @@ import mavros_msgs.msg
 import mavros_msgs.srv
 from sensor_msgs.msg import Imu
 from mavros_msgs.srv import CommandLong
-from pid_move.srv import target_local_pos, target_local_posResponse, goto_pid, goto_pidResponse
+from pid_move.srv import target_local_pos, target_local_posResponse, goto_pid, goto_pidResponse, goto_aruco, goto_arucoResponse
 import sys
 import signal
 import numpy as np
-import utm
 import tf
 
 
@@ -62,7 +61,7 @@ class SimpleDrone():
         self.goto_loc_pos_serv = rospy.ServiceProxy("target_local_pos", target_local_pos)
         self.goto_pid_pos_serv = rospy.ServiceProxy("goto_pid_service", goto_pid)
         # aruco based services
-        # self.goto_aruco_serv = rospy.ServiceProxy('goto_aruco', goto_aruco)
+        self.goto_aruco_serv = rospy.ServiceProxy('goto_aruco', goto_aruco)
         # self.land_aruco_serv = rospy.ServiceProxy('land_aruco', land_aruco)
 
         
@@ -162,9 +161,10 @@ class SimpleDrone():
         print("----- Swarm commander available inputs -----")
         print("exit -> to close the swarm commander")
         print("goto x y z yaw  -> uav will go to the  specified location location")
+        print("gotopid x y z yaw  -> uav will go to the  specified location location by commanding velocity")
         print("goto aruco [timeout] -> the uav will got to the aruco marker, timeOut is optional")
-        print("land [x y z yaw] -> uav will land at its current position or at the optional x, y, z, yaw")
-        print("land aruco -> uav will land on the aruco marker")
+        # print("land [x y z yaw] -> uav will land at its current position or at the optional x, y, z, yaw")
+        # print("land aruco -> uav will land on the aruco marker")
         print("return -> uav will return to its home position and land")
         print("--------------------------------------------")
     
@@ -197,16 +197,16 @@ class SimpleDrone():
                     if len(inp) == 5:
                         dist = self.GotoPos(pos)
                         self.Hover()
-                    # elif inp[1] == 'aruco':
-                    #     timeOut = 40
-                    #     if len(inp) == 3:
-                    #         timeOut = inp[2]
-                    #     dist = self.goto_aruco_serv(timeOut)
-                    #     self.Hover()
-                    # else:             
-                    #     self.Help()
-                    #     continue   
-                    # print("Position reached, distance ", dist)
+                    elif inp[1] == 'aruco':
+                        timeOut = 40
+                        if len(inp) == 3:
+                            timeOut = inp[2]
+                            timeOut = float(timeOut)
+                        dist = self.goto_aruco_serv(timeOut)
+                        self.Hover()
+                    else:             
+                        self.Help()
+                        continue   
                 elif inp[0] == 'gotopid':
                     dist = self.goto_pid_pos_serv(pos[0], pos[1], pos[2], pos[3])
                     self.Hover()

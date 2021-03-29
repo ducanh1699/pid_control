@@ -87,10 +87,10 @@ class MoveToPos():
         
         dist = np.linalg.norm(np.array(self.local_pos[0:3]) - np.array([x, y, z]))
         rospy.loginfo("estimated distance : " + str(dist))
-
-        self.set_mode(0, 'OFFBOARD')
-        if (not self.UAV_state.armed):
-            mavros.command.arming(True)
+        rospy.loginfo("wait to offboard")
+        #self.set_mode(0, 'OFFBOARD')
+        # if (not self.UAV_state.armed):
+        #     mavros.command.arming(True)
 
         last_request = rospy.Time.now()
         t0 = last_request
@@ -99,17 +99,17 @@ class MoveToPos():
         while ((np.linalg.norm(np.array(self.local_pos[0:3]) - np.array([x, y, z])) > 0.1) or
               (abs(yaw - self.local_pos[3]) > 0.01)):
             # print "Entered whiled loop"
-            if (self.UAV_state.mode != "OFFBOARD" and
-                    (rospy.Time.now() - last_request > rospy.Duration(5.0))):
-                self.set_mode(0, 'OFFBOARD')
-                print("uav enabling offboard mode")
-                last_request = rospy.Time.now()
-            else:
-                if (not self.UAV_state.armed and
-                        (rospy.Time.now() - last_request > rospy.Duration(5.0))):
-                    if (mavros.command.arming(True)):
-                        print("uav armed")
-                    last_request = rospy.Time.now()
+            # if (self.UAV_state.mode != "OFFBOARD" and
+            #         (rospy.Time.now() - last_request > rospy.Duration(5.0))):
+            #     self.set_mode(0, 'OFFBOARD')
+            #     print("uav enabling offboard mode")
+            #     last_request = rospy.Time.now()
+            # else:
+            #     if (not self.UAV_state.armed and
+            #             (rospy.Time.now() - last_request > rospy.Duration(5.0))):
+            #         if (mavros.command.arming(True)):
+            #             print("uav armed")
+            #         last_request = rospy.Time.now()
 
             # Position
             self.setpoint_msg.pose.position.x = x

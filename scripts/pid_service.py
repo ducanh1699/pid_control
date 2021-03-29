@@ -48,8 +48,8 @@ class PidNavigationController():
 
         # Setup rate
         self.rate = rospy.Rate(20)
-        rospy.sleep(1)
-        rospy.spin()
+        # rospy.sleep(1)
+        # rospy.spin()
 
     def _local_position_callback(self, topic):
         # Position data
@@ -67,40 +67,42 @@ class PidNavigationController():
         self.UAV_state.mode = topic.mode
         self.UAV_state.guided = topic.guided
     
-    def GotoLocPid(self, req):
+    # def GotoLocPid(self, req):
 
-        x = req.x
-        y = req.y
-        z = req.z
-        Y = req.yaw
-        print(x)
-        rospy.loginfo("uav received local target")
+    #     x = req.x
+    #     y = req.y
+    #     z = req.z
+    #     Y = req.yaw
+    #     print(x)
+    #     rospy.loginfo("uav received local target")
 
-        dist = self.GotoPid(x, y, z, Y)
+    #     dist = self.GotoPid(x, y, z, Y)
 
-        return goto_pidResponse(dist)
+    #     return goto_pidResponse(dist)
 
 
     def GotoPid(self, x, y, z, yaw):
         ''' Goto the position by pid '''
         rospy.loginfo('Going to the position by pid')
-
+        rospy.loginfo('Wait to offboard')
         new_sp = TwistStamped()
-        while self.UAV_state.mode != "OFFBOARD" :
-            rospy.sleep(0.1)
-            self.set_mode(0, 'OFFBOARD')
-            # Publish something to activate the offboard mode
+        if self.UAV_state.mode == "OFFBOARD":
             self.cmd_vel_pub.publish(new_sp)
+        # while self.UAV_state.mode != "OFFBOARD" :
+        #     rospy.sleep(0.1)
+        #     self.set_mode(0, 'OFFBOARD')
+        #     # Publish something to activate the offboard mode
+        #     self.cmd_vel_pub.publish(new_sp)
         
-        if not mavros.command.arming(True) :
-            mavros.command.arming(True)
+        # if not mavros.command.arming(True) :
+        #     mavros.command.arming(True)
             
-        xPID = PID(.4, 0.05, 0.1, output_limits=(-.5, 0.5), setpoint=x)
-        yPID = PID(.4, 0.05, 0.1, output_limits=(-.5, 0.5), setpoint=y )
-        zPID = PID(.2, 0.05, 0.1, output_limits=(-1.0, 1.0), setpoint=z)
-        yawPID = PID(.011, 0.005, 0.12, output_limits=(-1.0, 1.0), setpoint=yaw)
+        xPID = PID(.4, 0.05, 0.1, output_limits=(-.5, 0.5), setpoint=x,sample_time=0.3)
+        yPID = PID(.4, 0.05, 0.1, output_limits=(-.5, 0.5), setpoint=y,sample_time=0.3)
+        zPID = PID(.2, 0.05, 0.1, output_limits=(-1.0, 1.0), setpoint=z,sample_time=0.3)
+        yawPID = PID(.011, 0.005, 0.12, output_limits=(-.09, 0.09), setpoint=yaw, sample_time=0.3)
         
-        while ((np.linalg.norm(np.array(self.local_pos[0:3]) - np.array([x, y, z])) > 0.1) or (abs(yaw - self.local_pos[3]) > 0.01)):
+        while ((np.linalg.norm(np.array(self.local_pos[0:3]) - np.array([x, y, z])) > 0.2) or (abs(yaw - self.local_pos[3]) > 0.2)):
                 
             new_sp = TwistStamped()
             new_sp.twist.linear.x = xPID(self.local_pos[0])
@@ -109,7 +111,7 @@ class PidNavigationController():
             new_sp.twist.angular.z = yawPID(self.local_pos[3])
 
             self.cmd_vel_pub.publish(new_sp)
-
+            self.rate.sleep()
         return np.linalg.norm(np.array(self.local_pos[0:3]) - np.array([x, y, z]))
         
     def GotoLocPid (self, req):
