@@ -4,7 +4,6 @@
 import rospy
 import mavros
 from mavros.utils import *
-from mavros import setpoint as SP
 import mavros.setpoint
 import mavros.command
 import mavros_msgs.msg
@@ -15,7 +14,6 @@ from pid_move.srv import target_local_pos, target_local_posResponse, goto_pid, g
 import sys
 import signal
 import numpy as np
-import utm
 import tf
 
 
@@ -25,8 +23,7 @@ class SimpleDrone():
     """
 
     def __init__(self):
-        self.local_pos = [0.0] * 4
-        rospy.init_node("uav_node")
+        rospy.init_node("client_node", anonymous=True)
 
         self.rate = rospy.Rate(20)
         mavros.set_namespace('mavros')
@@ -41,10 +38,6 @@ class SimpleDrone():
                                      mavros_msgs.msg.State, self._state_callback)
         # /mavros/imu/data
         rospy.Subscriber('/mavros/imu/data', Imu, self.IMU_callback)
-
-        # # /mavros/local_position/pose
-        local_position_sub = rospy.Subscriber(mavros.get_topic('local_position', 'pose'),
-             SP.PoseStamped, self._local_position_callback)
 
         # /mavros/setpoint_raw/target_local
         setpoint_local_sub = rospy.Subscriber(mavros.get_topic('setpoint_raw', 'target_local'),
@@ -74,18 +67,7 @@ class SimpleDrone():
 
         self.InputHandler()
 
-        #rospy.spin()
-
-
-    def _local_position_callback(self, topic):
-        # Position data
-        self.local_pos[0] = topic.pose.position.x
-        self.local_pos[1] = topic.pose.position.y
-        self.local_pos[2] = topic.pose.position.z
-
-         # Orientation data
-        (r, p, y) = tf.transformations.euler_from_quaternion([topic.pose.orientation.x, topic.pose.orientation.y, topic.pose.orientation.z, topic.pose.orientation.w])
-        self.local_pos[3] = y
+        rospy.spin()
 
     def signal_handler(self, signal, frame):
         print('You pressed Ctrl+C!')
@@ -164,8 +146,6 @@ class SimpleDrone():
         print("goto x y z yaw  -> uav will go to the  specified location location")
         print("gotopid x y z yaw  -> uav will go to the  specified location location by commanding velocity")
         print("goto aruco [timeout] -> the uav will got to the aruco marker, timeOut is optional")
-        # print("land [x y z yaw] -> uav will land at its current position or at the optional x, y, z, yaw")
-        # print("land aruco -> uav will land on the aruco marker")
         print("return -> uav will return to its home position and land")
         print("--------------------------------------------")
     
@@ -199,7 +179,7 @@ class SimpleDrone():
                         dist = self.GotoPos(pos)
                         self.Hover()
                     elif inp[1] == 'aruco':
-                        timeOut = 40
+                        timeOut = 20
                         if len(inp) == 3:
                             timeOut = inp[2]
                             timeOut = float(timeOut)
@@ -211,22 +191,6 @@ class SimpleDrone():
                 elif inp[0] == 'gotopid':
                     dist = self.goto_pid_pos_serv(pos[0], pos[1], pos[2], pos[3])
                     self.Hover()
-                # elif inp[0] == 'land':
-                #     if len(inp) == 5:
-                #         self.Land(pos)
-                #     elif inp[1] == 'aruco':
-                #         # First go to the aruco marker
-                #         dist = self.goto_aruco_serv(60)
-                #         rospy.loginfo('Distance to marker ' + str(dist.dist))
-                #         if dist.dist < 1.0:
-                #             self.land_aruco_serv(60)
-                #             self.Land()
-                #         else:
-                #             rospy.logerr('Marker too far')
-                #             self.Hover()
-                #             continue
-                #     else:
-                #         self.Help()
                 else:
                     self.Help()
             else:
@@ -235,7 +199,3 @@ class SimpleDrone():
 ###################################################################################################        
 if __name__ == "__main__":
     SD = SimpleDrone()
-    #SD2 = SimpleDrone(2)
-    #SD2.GotoLocalPos(5, 5, 10)
-    #SD2.SimpleMovement()
-    #SD1.GotoGlobPos(55.43600, 10.46091, 540)

@@ -55,8 +55,7 @@ class ArucoNavigationController():
         #land_aruco_serv = rospy.Service('land_aruco', land_aruco, self.LandAruco)
 
         # Setup rate
-        self.rate = rospy.Rate(100)
-        rospy.sleep(1)
+        self.rate = rospy.Rate(20)
         rospy.spin()
 
     def _local_position_callback(self, topic):
@@ -103,23 +102,23 @@ class ArucoNavigationController():
         timeOut = req.timeOut
 
         new_sp = TwistStamped()
-        while self.UAV_state.mode != "OFFBOARD" :
-            rospy.sleep(0.1)
-            self.set_mode(0, 'OFFBOARD')
-            # Publish something to activate the offboard mode
-            self.cmd_vel_pub.publish(new_sp)
+        # while self.UAV_state.mode != "OFFBOARD" :
+        #     rospy.sleep(0.1)
+        #     self.set_mode(0, 'OFFBOARD')
+        #     # Publish something to activate the offboard mode
+        #     self.cmd_vel_pub.publish(new_sp)
         
-        if not mavros.command.arming(True) :
-            mavros.command.arming(True)
+        # if not mavros.command.arming(True) :
+        #     mavros.command.arming(True)
             
         ts = rospy.Time.now()
 
-        xPID = PID(.2, 0.05, 0.1, output_limits=(-.5, 0.5), setpoint=0.0, sample_time=0.5)
-        yPID = PID(.2, 0.05, 0.1, output_limits=(-.5, 0.5), setpoint=0.0, sample_time=0.5)
-        zPID = PID(.2, 0.05, 0.1, output_limits=(-0.5, 0.5), setpoint=0.0, sample_time=0.5)
-        yawPID = PID(.011, 0.005, 0.12, output_limits=(-1.0, 1.0), setpoint=0.0, sample_time=0.5)
+        xPID = PID(.2, 0.05, 0.1, output_limits=(-.2, 0.2), setpoint=0.0, sample_time=0.3)
+        yPID = PID(.2, 0.05, 0.1, output_limits=(-.2, 0.2), setpoint=0.0, sample_time=0.3)
+        zPID = PID(.2, 0.05, 0.1, output_limits=(-0.5, 0.5), setpoint=0.0, sample_time=0.3)
+        yawPID = PID(.011, 0.005, 0.12, output_limits=(-1.0, 1.0), setpoint=0.0, sample_time=0.08)
 
-        while (rospy.Time.now() - ts < rospy.Duration(timeOut)):
+        while (rospy.Time.now() - ts < rospy.Duration(timeOut)) or (np.linalg.norm(self.markerPos[0:2])>0.1):
             
             new_sp = TwistStamped()
             if (self.local_pos[3] <0.1) and (self.local_pos[3]>-0.1):
@@ -146,6 +145,7 @@ class ArucoNavigationController():
             #print(np.linalg.norm(self.markerPos[0:3] - np.array([0.0, 0.0, -self.markerHeight])))
 
             self.cmd_vel_pub.publish(new_sp)
+            self.rate.sleep()
 
         return goto_arucoResponse(np.linalg.norm(self.markerPos[0:3]))
 

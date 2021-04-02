@@ -54,8 +54,8 @@ class MarkerDetector:
         self.parameters =  cv.aruco.DetectorParameters_create()
         
         # Setup rate
-        self.rate = rospy.Rate(100)
-        self.rate.sleep()
+        self.rate = rospy.Rate(20)
+        
 
     # def _local_position_callback(self, topic):
     #     # Position data
@@ -122,6 +122,7 @@ class MarkerDetector:
                 marker_pos.yaw = eul[2]  * np.pi / 180.0
     
                 self.aruco_marker_pos_pub.publish(marker_pos)
+                self.rate.sleep
 
 
 
